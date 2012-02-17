@@ -1,15 +1,14 @@
 // jQuery.Graphs.js
 
-$(document).ready(function($) {
-	$('[data-graph]').each(function(index){
-		var target = $(this);
-		var dataUrl = target.attr('data-graph');
-		CreateGraph(target, dataUrl);
-	});
-});
+(function( $ ){
 
-function CreateGraph(target, dataUrl){
-	var options = {
+    var settings = {
+                defaultType: 'column'
+            }; //default options
+
+function CreateGraph(target){
+    var dataUrl = target.attr('data-graph');
+    var graphOptions = {
 		chart: { 
 			renderTo : $(target)[0]
 		},
@@ -36,14 +35,14 @@ function CreateGraph(target, dataUrl){
 		success: function(xml) {
 			var $xml = $(xml);
 
-			options.title.text = $xml.find('title').text();
-			options.yAxis.title.text = $xml.find('yAxis text').text();
-			options.chart.type = $xml.find('type').text();
+			graphOptions.title.text = $xml.find('title').text();
+			graphOptions.yAxis.title.text = $xml.find('yAxis text').text();
+			graphOptions.chart.type = $xml.find('type').text();
 
 			// push categories
 			var categories = $xml.find('categories').text();
 			$.each(categories.split(","), function(i, category) {
-				options.xAxis.categories.push(category);
+				graphOptions.xAxis.categories.push(category);
 			});
 			
 			// push series
@@ -57,14 +56,46 @@ function CreateGraph(target, dataUrl){
 				var data = $(series).find('data').text();
 				$.each(data.split(","), function(i, point) {
 					seriesOptions.data.push(
-						parseInt(point)
+						parseInt(point, 10)
 					);
 				});
 				
 				// add it to the options
-				options.series.push(seriesOptions);
+				graphOptions.series.push(seriesOptions);
 			});
-			var chart = new Highcharts.Chart(options);
+			var chart = new Highcharts.Chart(graphOptions);
 		}
 	});
 }
+
+    var methods = {
+        init : function( options ) {
+            
+            if ( options ) { 
+                $.extend( settings, options );
+            }
+
+            return this.each(function(){
+                var target = $(this);
+                CreateGraph(target);
+            }); 
+        }
+    };
+
+    $.fn.Graphs = function(method) {
+        
+        // Method calling logic
+        if ( methods[method] ) {
+          return methods[ method ].apply( this, Array.prototype.slice.call( arguments, 1 ));
+        } else if ( typeof method === 'object' || ! method ) {
+          return methods.init.apply( this, arguments );
+        } else {
+          $.error( 'Method ' +  method + ' does not exist on jQuery.Graphs' );
+        }
+    };
+
+})( jQuery );
+
+$(document).ready(function() {
+    $('[data-graph]').Graphs();
+});
